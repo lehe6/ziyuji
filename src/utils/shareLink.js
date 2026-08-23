@@ -41,6 +41,9 @@ export function buildPayloadFromStore(store) {
     explanation: store.explanation,
     storyTurn: store.storyTurn,
     revealed: store.revealed,
+    // 接龙玩家预设随链接流转
+    usePresetPlayers: store.usePresetPlayers,
+    storyPlayers: store.storyPlayers.slice(),
     createdAt: Date.now()
   }
 }

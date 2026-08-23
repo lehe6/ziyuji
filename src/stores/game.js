@@ -45,7 +45,10 @@ export const useGameStore = defineStore('game', {
     // 收藏列表
     favorites: loadJSON(FAV_KEY, []),
     // 历史（最近若干轮）
-    history: loadJSON(HIST_KEY, [])
+    history: loadJSON(HIST_KEY, []),
+    // 接龙玩家预设（演示）
+    usePresetPlayers: false,
+    storyPlayers: ['玩家1', '玩家2']
   }),
   getters: {
     themeText(state) {
@@ -63,6 +66,7 @@ export const useGameStore = defineStore('game', {
       const v = Math.min(8, Math.max(3, Number(n) || 5))
       this.count = v
     },
+    setStoryPlayers(arr) { this.storyPlayers = arr.slice() },
 
     // 开始游戏 -> 进入 play，根据模式决定是否先抽牌
     startGame() {
@@ -117,6 +121,11 @@ export const useGameStore = defineStore('game', {
       this.explanation = payload.explanation || ''
       this.revealed = !!payload.revealed
       this.relayFrom = payload.createdAt || null
+      // 恢复接龙玩家预设
+      this.usePresetPlayers = !!payload.usePresetPlayers
+      this.storyPlayers = (payload.storyPlayers && payload.storyPlayers.length)
+        ? payload.storyPlayers.slice()
+        : ['玩家1', '玩家2']
       this.view = 'play'
       return true
     },
@@ -139,18 +148,27 @@ export const useGameStore = defineStore('game', {
       if (!card) return null
       this.storyTurn = nextIdx
       this.hand.push(card)
+      // 启用预设时，按轮次索引取预设玩家名
+      let name = playerName || `玩家${nextIdx + 1}`
+      if (this.usePresetPlayers && this.storyPlayers.length) {
+        name = this.storyPlayers[nextIdx % this.storyPlayers.length] || name
+      }
       this.storyLines.push({
         turn: nextIdx,
-        player: playerName || `玩家${nextIdx + 1}`,
+        player: name,
         sentence: '',
-        cardId: card.id
+        cardId: card.id,
+        preset: this.usePresetPlayers
       })
       this.revealed = false
       return card
     },
-    setStoryLineSentence(turn, sentence) {
+    setStoryLineSentence(turn, sentence, playerName = '') {
       const line = this.storyLines.find(l => l.turn === turn)
-      if (line) line.sentence = sentence
+      if (line) {
+        line.sentence = sentence
+        if (playerName) line.player = playerName
+      }
     },
 
     // 揭晓

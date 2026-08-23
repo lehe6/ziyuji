@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, ref } from 'vue'
 import { useGameStore } from '../stores/game.js'
 import WordCard from './WordCard.vue'
 import { modeLabel } from '../utils/draw.js'
@@ -25,26 +25,21 @@ const theme = computed(() => store.theme)
 const hand = computed(() => store.hand)
 const revealed = computed(() => store.revealed)
 
-const handCards = computed(() => hand.value) // 用于 vuedraggable 的可写代理
-const sortedHand = ref([])
-
-watch(() => hand.value.slice(), (nv) => {
-  sortedHand.value = nv.slice()
-}, { immediate: true })
-
-watch(sortedHand, (nv) => {
-  if (mode.value === 'rearrange') {
-    store.reorderHand(nv.slice())
-  }
-}, { deep: true })
+// rearrange 模式直接绑 store.hand（可写数组），避免 sortedHand 中间层造成 watch 循环
+// hand 是 computed，vuedraggable 需要可写数组 → 用 getter/setter 代理
+const dragHand = computed({
+  get: () => store.hand,
+  set: (v) => { store.reorderHand(v) }
+})
 
 // 抽牌动画（popDelay 依次错峰）
 const popFor = (i) => i * 90 + 40
 
 // ========= 模式二：故事接龙 =========
+// 启用预设时，名字按 turn 自动取，不需手填
+const presetOn = computed(() => store.usePresetPlayers && store.storyPlayers.length > 0)
 function takeNextTurn() {
-  const name = storyPlayerName.value.trim() || `玩家${store.storyTurn + 2}`
-  const card = store.nextStoryTurn(name)
+  const card = store.nextStoryTurn('') // 名字在 store 内按预设/占位处理
   if (!card) {
     toast('牌库抽完了，本回合结束～')
     storyInputTurn.value = -2
@@ -52,13 +47,25 @@ function takeNextTurn() {
   }
   storyInputTurn.value = store.storyTurn
   storySentenceInput.value = ''
+  // 预设模式：显示自动名且只读；否则清空让玩家自填
+  storyPlayerName.value = presetOn.value ? (store.storyLines[store.storyTurn]?.player || '') : ''
 }
 function submitStorySentence() {
   const t = storyInputTurn.value
   if (t < 0) return
-  store.setStoryLineSentence(t, storySentenceInput.value.trim())
+  const name = presetOn.value
+    ? (store.storyLines[t]?.player || '')
+    : storyPlayerName.value.trim()
+  const sen = storySentenceInput.value.trim()
+  if (!sen) {
+    toast('先写一句再提交～')
+    return
+  }
+  store.setStoryLineSentence(t, sen, name)
   toast('已记录，点下一张抽下一位')
   storyInputTurn.value = -1
+  storyPlayerName.value = ''
+  storySentenceInput.value = ''
 }
 const storyFullSentence = computed(() => {
   return store.storyLines
@@ -167,14 +174,17 @@ async function handleShare() {
   }
 }
 
-onMounted(() => {
-  // 保证进入后 sortedHand 同步
-  sortedHand.value = hand.value.slice()
-})
 </script>
 
 <template>
   <div>
+    <!-- 返回主页 + 当前局信息 -->
+    <div class="row gap-s mb-m" style="align-items: center;">
+      <button class="btn small ghost" @click="store.setView('setup')">← 返回主页</button>
+      <div class="sp"></div>
+      <span class="tag" style="font-size:12px;">{{ themeLabel[theme] }} · {{ modeLabel[mode] }}</span>
+    </div>
+
     <div class="card">
       <div class="section-title">
         <span>当前牌局</span>
@@ -185,7 +195,7 @@ onMounted(() => {
       <template v-if="mode !== 'story'">
         <div v-if="mode === 'rearrange'">
           <draggable
-            v-model="sortedHand"
+            v-model="dragHand"
             item-key="id"
             class="cards-grid rearrange-list"
             :animation="260"
@@ -258,8 +268,13 @@ onMounted(() => {
           </div>
           <div style="flex:1; display: flex; flex-direction: column; gap: 10px;">
             <div>
-              <label class="label">当前玩家</label>
-              <input v-model="storyPlayerName" type="text" placeholder="玩家昵称（可留空）" />
+              <label class="label">当前玩家{{ presetOn ? '（已自动记名）' : '' }}</label>
+              <input
+                v-model="storyPlayerName"
+                type="text"
+                :placeholder="presetOn ? '系统按轮次自动填名' : '玩家昵称（可留空）'"
+                :readonly="presetOn"
+              />
             </div>
             <div>
               <label class="label">请用抽到的词造句，接续故事</label>

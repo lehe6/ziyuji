@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import { useGameStore } from '../stores/game.js'
 import { modeLabel } from '../utils/draw.js'
 
@@ -34,6 +35,27 @@ function startQuick100() {
     alert(`快速自检：抽牌 ${total} 次，废牌 ${fail} 次（验收标准 0 次）`)
   })
 }
+
+// ========= 接龙玩家预设（演示用，试完可撤） =========
+const playerCount = computed({
+  get: () => store.storyPlayers.length || 2,
+  set: (v) => {
+    const n = Math.min(8, Math.max(2, Number(v) || 2))
+    // 调整列表长度，保留已填内容
+    const arr = store.storyPlayers.slice(0, n)
+    while (arr.length < n) arr.push(`玩家${arr.length + 1}`)
+    store.setStoryPlayers(arr)
+  }
+})
+function setPlayerName(i, name) {
+  const arr = store.storyPlayers.slice()
+  arr[i] = name || `玩家${i + 1}`
+  store.setStoryPlayers(arr)
+}
+const usePlayerPreset = computed({
+  get: () => store.usePresetPlayers,
+  set: (v) => { store.usePresetPlayers = v }
+})
 </script>
 
 <template>
@@ -95,6 +117,29 @@ function startQuick100() {
       <p class="sub mt-s" style="font-size: 13px;">
         {{ modes.find(m => m.key === store.mode).desc }}
       </p>
+    </div>
+
+    <!-- 接龙玩家预设（仅 story 模式，演示） -->
+    <div v-if="store.mode === 'story'" class="card mt-m" style="border: 1px dashed #a78bfa;">
+      <div class="section-title"><span>参玩玩家（接龙预设）</span><span>DEMO</span></div>
+      <label class="row gap-s" style="cursor:pointer;">
+        <input type="checkbox" v-model="usePlayerPreset" />
+        <span class="sub" style="font-size:13px;">启用玩家预设：开局填好昵称，轮到谁自动记名、只需输入句子</span>
+      </label>
+      <div v-if="usePlayerPreset" class="mt-m">
+        <div class="row gap-m">
+          <label class="label" style="margin:0;">人数</label>
+          <input class="slider" type="range" min="2" max="8" v-model.number="playerCount" style="flex:1;" />
+          <span class="count-badge" style="width:42px;height:42px;font-size:18px;border-radius:12px;">{{ playerCount }}</span>
+        </div>
+        <div class="mt-m" style="display:flex; flex-direction:column; gap:8px;">
+          <div v-for="(p, i) in store.storyPlayers" :key="i" class="row gap-s">
+            <span class="tag" style="min-width:34px; text-align:center;">P{{ i + 1 }}</span>
+            <input type="text" :value="p" @input="setPlayerName(i, $event.target.value)" placeholder="昵称" />
+          </div>
+        </div>
+        <p class="sub mt-s" style="font-size:12px;">💡 试完不喜欢可在顶部关闭开关，不影响其他模式。</p>
+      </div>
     </div>
 
     <div class="mt-l row gap-s">

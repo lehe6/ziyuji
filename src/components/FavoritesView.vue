@@ -46,6 +46,9 @@ function copyItem(it) {
 
 <template>
   <div>
+    <div class="row gap-s mb-m" style="align-items: center;">
+      <button class="btn small ghost" @click="store.setView('setup')">← 返回主页</button>
+    </div>
     <h1 class="title">我的收藏</h1>
     <p class="sub">保存的句子/故事永久存放在本地浏览器。可一键复制文本或导出备份。</p>
 

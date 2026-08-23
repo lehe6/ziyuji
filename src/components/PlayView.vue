@@ -19,6 +19,8 @@ const storyInputTurn = ref(-1) // 正在输入的轮次 (-1 表示准备下一�
 const shareRef = ref(null)
 const isExporting = ref(false)
 const relayUrl = ref('')
+const relayLoading = ref(false)
+const relayMeta = ref(null) // { type: 'short'|'long', id, ttl }
 
 const mode = computed(() => store.mode)
 const theme = computed(() => store.theme)
@@ -109,21 +111,34 @@ function handleSave() {
   toast('已保存到我的收藏 ✨')
 }
 
-// ========= 接力链接（免后端多人协作） =========
-function genRelayUrl() {
-  const payload = buildPayloadFromStore(store)
-  const url = buildShareUrl(payload)
-  relayUrl.value = url
-  // 尝试复制到剪贴板
-  if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(url).then(
-      () => toast('接力链接已复制，发给下一位吧 📋', 2400),
-      () => toast('链接已生成在下方，长按复制', 3000)
-    )
-  } else {
-    toast('链接已生成在下方，长按复制', 3000)
+// ========= 接力链接（短链优先，失败降级长链） =========
+async function genRelayUrl() {
+  if (relayLoading.value) return
+  relayLoading.value = true
+  try {
+    const payload = buildPayloadFromStore(store)
+    const { url, type, id, ttl } = await buildShareUrl(payload)
+    relayUrl.value = url
+    relayMeta.value = { type, id, ttl }
+    const days = ttl ? Math.round(ttl / 86400) : null
+    const tag = type === 'short'
+      ? `短链(${days ? days + '天有效' : '永久'})`
+      : '长链接(含全部数据)'
+    // 复制到剪贴板
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(url)
+        toast(`${tag} · 已复制，发给朋友吧 📋`, 2600)
+      } catch {
+        toast(`${tag} · 已生成在下方，长按复制`, 3000)
+      }
+    } else {
+      toast(`${tag} · 已生成在下方，长按复制`, 3000)
+    }
+    return url
+  } finally {
+    relayLoading.value = false
   }
-  return url
 }
 
 // ========= 分享卡片 =========
@@ -345,15 +360,24 @@ async function handleShare() {
         <button class="btn" @click="handleShare" :disabled="isExporting">
           {{ isExporting ? '生成中…' : '🖼️ 保存图片' }}
         </button>
-        <button class="btn primary" @click="genRelayUrl">🔗 生成接力链接</button>
+        <button
+          class="btn primary"
+          @click="genRelayUrl"
+          :disabled="relayLoading"
+        >{{ relayLoading ? '生成中…' : '🔗 生成接力链接' }}</button>
       </div>
       <p class="sub mt-s" style="font-size: 12px; line-height: 1.6;">
         · <b>保存图片</b>：把当前牌局+句子导出成 PNG，存本地相册。<br/>
-        · <b>接力链接</b>：把整局状态打包进链接发给朋友。
-        <span v-if="mode === 'story'">接龙模式：对方打开继续抽牌接下一句。</span>
-        <span v-else>对方打开看到你的牌，可另起炉灶造句/重排。</span>
+        · <b>接力链接</b>：优先生成 40 字左右的短链（30 天有效）；后端未绑定时自动降级长链接。
+        <br/>接龙模式：对方打开继续抽牌接下一句。其他模式：对方打开看到你的牌，再创作。
       </p>
       <div v-if="relayUrl" class="mt-m">
+        <div class="row gap-s" style="margin-bottom: 6px;">
+          <span
+            class="tag"
+            :style="relayMeta?.type === 'short' ? 'background: rgba(101,163,13,0.15); color: #65a30d;' : 'background: rgba(180,83,9,0.15); color: #b45309;'"
+          >{{ relayMeta?.type === 'short' ? `短链 · ${Math.round(relayMeta.ttl/86400)}天有效` : '长链接 · 含全部数据' }}</span>
+        </div>
         <label class="label">长按或点击下方框复制链接，发给朋友</label>
         <input
           type="text"
@@ -363,7 +387,12 @@ async function handleShare() {
           style="font-size: 12px; word-break: break-all;"
         />
         <div class="mt-s row gap-s">
-          <button class="btn small ghost" @click="genRelayUrl">刷新链接</button>
+          <button class="btn small ghost" @click="genRelayUrl" :disabled="relayLoading">刷新链接</button>
+          <button
+            class="btn small ghost"
+            v-if="relayMeta?.type === 'long'"
+            @click="async () => { const c = confirm('后端短链接口未绑定或无 KV，要不要现在手动去 Vercel 绑定？\\n（绑完自动生短链）'); if(c) open('https://vercel.com/' + (location.hostname.startsWith('localhost') ? '' : ''), '_blank'); }"
+          >⚠️ 如何升级到短链？</button>
         </div>
       </div>
       <div v-if="store.relayFrom" class="mt-s" style="font-size: 12px; color: var(--ok, #10b981);">

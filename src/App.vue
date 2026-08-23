@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, provide } from 'vue'
 import { useGameStore } from './stores/game.js'
-import { decodeState } from './utils/shareLink.js'
+import { resolveCurrentState } from './utils/shareLink.js'
 import SetupView from './components/SetupView.vue'
 import PlayView from './components/PlayView.vue'
 import FavoritesView from './components/FavoritesView.vue'
@@ -21,16 +21,37 @@ function showToast(text, dur = 1800) {
 }
 provide('toast', showToast)
 
-// 启动时检测 URL hash：若有接力数据，自动恢复进入牌局
-onMounted(() => {
-  const payload = decodeState()
-  if (payload) {
-    const ok = store.loadFromRelay(payload)
-    if (ok) {
-      // 清掉 hash，避免刷新重复弹 toast；状态已进 store
-      history.replaceState(null, '', location.pathname + location.search)
-      showToast('已从接力链接恢复牌局，继续接龙吧～', 2400)
+// 启动时检测 URL：短链 ?r= 优先，再 fallback 旧版 #zyj= 长链
+onMounted(async () => {
+  try {
+    const r = await resolveCurrentState()
+    if (r.state) {
+      const ok = store.loadFromRelay(r.state)
+      if (ok) {
+        // 清理链接里的接力参数，刷新不重复触发
+        history.replaceState(null, '', location.pathname)
+        if (r.source === 'short') {
+          showToast('已从短链接力恢复牌局，继续接龙吧～', 2400)
+        } else {
+          showToast('已从接力链接恢复牌局，继续接龙吧～', 2400)
+        }
+        return
+      }
     }
+    // 短链解析失败（NOT_FOUND / KV_NOT_AVAILABLE 等）给个提示
+    if (r.source === 'short' && r.error) {
+      if (r.error === 'NOT_FOUND') {
+        showToast('🔗 接力链接已失效或过期，重新开局吧～', 3000)
+      } else if (r.error === 'KV_NOT_AVAILABLE') {
+        showToast('⚠️ 后端短链服务未就绪，请联系管理员绑定 KV', 3000)
+      } else {
+        showToast(`链接解析失败：${r.error}`, 3000)
+      }
+      // 清掉失效的 ?r=，刷新不再提示
+      history.replaceState(null, '', location.pathname)
+    }
+  } catch (e) {
+    console.warn('接力链接恢复失败', e)
   }
 })
 </script>

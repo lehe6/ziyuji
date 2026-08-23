@@ -17,7 +17,7 @@
 
   --theme-comedy: #f59e0b;
   --theme-literary: #6366f1;
-  --theme-mixed: #10b981;
+  --theme-mixed: #8b5cf6;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -117,7 +117,7 @@ p.sub { color: var(--text-2); margin: 0; font-size: 14px; line-height: 1.6; }
 }
 .chip.comedy.active { background: linear-gradient(135deg, #f59e0b, #c2410c); box-shadow: 0 8px 18px -10px rgba(194,65,12,0.5); }
 .chip.literary.active { background: linear-gradient(135deg, #6366f1, #4338ca); box-shadow: 0 8px 18px -10px rgba(67,56,202,0.5); }
-.chip.mixed.active { background: linear-gradient(135deg, #10b981, #047857); box-shadow: 0 8px 18px -10px rgba(4,120,87,0.5); }
+.chip.mixed.active { background: linear-gradient(135deg, #8b5cf6, #5b21b6); box-shadow: 0 8px 18px -10px rgba(91,33,182,0.5); }
 
 /* ========= 滑块 ========= */
 .slider {
@@ -188,7 +188,7 @@ p.sub { color: var(--text-2); margin: 0; font-size: 14px; line-height: 1.6; }
 
 .word-card.theme-comedy .face-front { background: linear-gradient(160deg, #fffbeb, #fed7aa 70%, #fb923c); color: #431407; }
 .word-card.theme-literary .face-front { background: linear-gradient(160deg, #eef2ff, #c7d2fe 70%, #818cf8); color: #1e1b4b; }
-.word-card.theme-mixed .face-front { background: linear-gradient(160deg, #ecfdf5, #a7f3d0 70%, #34d399); color: #064e3b; }
+.word-card.theme-mixed .face-front { background: linear-gradient(160deg, #f5f3ff, #ddd6fe 70%, #a78bfa); color: #2e1065; }
 
 .word-card .word {
   font-size: 28px; font-weight: 800; letter-spacing: 0.04em;
@@ -204,7 +204,7 @@ p.sub { color: var(--text-2); margin: 0; font-size: 14px; line-height: 1.6; }
 }
 .word-card.theme-comedy .pos-tag { background: rgba(120, 53, 15, 0.12); color: #7c2d12; }
 .word-card.theme-literary .pos-tag { background: rgba(49, 46, 129, 0.14); color: #312e81; }
-.word-card.theme-mixed .pos-tag { background: rgba(6, 78, 59, 0.14); color: #064e3b; }
+.word-card.theme-mixed .pos-tag { background: rgba(91, 33, 182, 0.14); color: #5b21b6; }
 
 .word-card.draw-pop { animation: drawPop .55s cubic-bezier(.2,.9,.3,1.2) both; }
 @keyframes drawPop {
@@ -284,7 +284,7 @@ textarea:focus, input[type=text]:focus {
 }
 .tag.comedy { background: rgba(194,65,12,0.12); color: #c2410c; }
 .tag.literary { background: rgba(67,56,202,0.14); color: #4338ca; }
-.tag.mixed { background: rgba(4,120,87,0.14); color: #047857; }
+.tag.mixed { background: rgba(91,33,182,0.14); color: #5b21b6; }
 .fav-words {
   display: flex; flex-wrap: wrap; gap: 6px;
   margin-top: 10px;

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { drawHand, drawStoryCard } from '../utils/draw.js'
-import { deckData } from '../data/deck.js'
+import { deckData, normalizePos } from '../data/deck.js'
 
 const FAV_KEY = 'zyj_favorites_v1'
 const HIST_KEY = 'zyj_history_v1'
@@ -52,7 +52,7 @@ export const useGameStore = defineStore('game', {
   }),
   getters: {
     themeText(state) {
-      return { comedy: '喜剧库', literary: '文艺库', mixed: '混搭库' }[state.theme]
+      return { comedy: '喜剧区', literary: '文艺区', mixed: '故事区' }[state.theme]
     },
     modeText(state) {
       return { solo: '各自造句', story: '故事接龙', rearrange: '排列重组' }[state.mode]
@@ -100,11 +100,11 @@ export const useGameStore = defineStore('game', {
       this.theme = payload.theme || 'comedy'
       this.mode = payload.mode || 'solo'
       this.count = payload.count || 5
-      // 在当前设备 deckData 里按 word+pos 重新匹配完整词条（含 id），保证后续去重可用
-      const deck = deckData[this.theme] || []
+      // 扁平词库中按 word + pos(normalized) 重新匹配完整词条
       const hand = (payload.hand || []).map(c => {
-        const found = deck.find(d => d.word === c.word && d.pos === c.pos) || null
-        return found ? { ...found } : { id: `relay_${c.word}`, word: c.word, pos: c.pos, theme: this.theme }
+        const np = normalizePos(c.pos)
+        const found = deckData.find(d => d.word === c.word && d.pos === np) || null
+        return found ? { ...found } : { id: `relay_${c.word}`, word: c.word, pos: np, theme: this.theme }
       })
       this.hand = hand
       // 重建单局去重池：以 hand 的 id 为基础
@@ -144,7 +144,7 @@ export const useGameStore = defineStore('game', {
     // 模式二：进入下一轮 -> 抽一张
     nextStoryTurn(playerName = '') {
       const nextIdx = this.storyTurn + 1
-      const card = drawStoryCard(this.theme, this.storyDrawn, nextIdx)
+      const card = drawStoryCard(this.theme, this.storyDrawn, nextIdx, this.count)
       if (!card) return null
       this.storyTurn = nextIdx
       this.hand.push(card)
@@ -186,11 +186,11 @@ export const useGameStore = defineStore('game', {
       this.theme = item.theme || 'comedy'
       this.mode = item.mode || 'solo'
       this.count = item.cards?.length || 5
-      // 在当前设备 deckData 里按 word+pos 重建完整词条
-      const deck = deckData[this.theme] || []
+      // 扁平词库中按 word + pos(normalized) 重建完整词条
       const hand = (item.cards || []).map(c => {
-        const found = deck.find(d => d.word === c.word && d.pos === c.pos)
-        return found ? { ...found } : { id: `fav_${c.word}`, word: c.word, pos: c.pos, theme: this.theme }
+        const np = normalizePos(c.pos)
+        const found = deckData.find(d => d.word === c.word && d.pos === np)
+        return found ? { ...found } : { id: `fav_${c.word}`, word: c.word, pos: np, theme: this.theme }
       })
       this.hand = hand
       this.sessionDrawn = hand.map(c => c.id)

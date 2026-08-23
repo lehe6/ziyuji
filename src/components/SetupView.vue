@@ -6,9 +6,9 @@ import { modeLabel } from '../utils/draw.js'
 const store = useGameStore()
 
 const themes = [
-  { key: 'comedy', label: '喜剧库', desc: '打工人 · 瓜田 · 破防日常', emoji: '🤡' },
-  { key: 'literary', label: '文艺库', desc: '废墟 · 深海 · 宿命呢喃', emoji: '🌌' },
-  { key: 'mixed', label: '混搭库', desc: '工业 · 公文 · 代码碰撞', emoji: '🧪' }
+  { key: 'comedy', label: '喜剧区', desc: '市井下沉 × 宏大反差 · 降维打击', emoji: '🤡' },
+  { key: 'mixed', label: '故事区', desc: '悬疑具象 × 自然留白 · 故事接龙', emoji: '🔦' },
+  { key: 'literary', label: '文艺区', desc: '自然诗意 × 工业解构 · 后现代', emoji: '🌌' }
 ]
 
 const modes = [
@@ -153,7 +153,7 @@ const usePlayerPreset = computed({
 
     <p class="sub mt-l" style="font-size: 12px; color: var(--text-dim);">
       · 无需登录，收藏自动存在本地浏览器。<br/>
-      · 单局自动去重、虚词≤1、强制保底名+动，杜绝死局。
+      · 多维标签词库：词性配比随牌数动态调整，调性随主题调配，强制保底名+动。
     </p>
   </div>
 </template>

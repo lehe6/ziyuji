@@ -179,6 +179,39 @@ export const useGameStore = defineStore('game', {
       this.hand = newOrder
     },
 
+    // 从收藏继续编辑：把该条重新载入当前牌局，回到 play 视图
+    resumeFavorite(item) {
+      if (!item) return false
+      this.resetSession()
+      this.theme = item.theme || 'comedy'
+      this.mode = item.mode || 'solo'
+      this.count = item.cards?.length || 5
+      // 在当前设备 deckData 里按 word+pos 重建完整词条
+      const deck = deckData[this.theme] || []
+      const hand = (item.cards || []).map(c => {
+        const found = deck.find(d => d.word === c.word && d.pos === c.pos)
+        return found ? { ...found } : { id: `fav_${c.word}`, word: c.word, pos: c.pos, theme: this.theme }
+      })
+      this.hand = hand
+      this.sessionDrawn = hand.map(c => c.id)
+      this.storyDrawn = hand.map(c => c.id)
+      if (item.mode === 'story' && item.storyLines?.length) {
+        this.storyLines = item.storyLines.map((l, i) => ({
+          turn: l.turn ?? i,
+          player: l.player || `玩家${(l.turn ?? i) + 1}`,
+          sentence: l.sentence || '',
+          cardId: l.cardId || (hand[i] ? hand[i].id : null)
+        }))
+        this.storyTurn = this.storyLines.length - 1
+      }
+      this.sentence = item.sentence || ''
+      this.explanation = item.explanation || ''
+      this.revealed = false
+      this.relayFrom = null
+      this.view = 'play'
+      return true
+    },
+
     // 保存为收藏
     saveFavorite(extra = {}) {
       const item = {

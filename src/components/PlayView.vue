@@ -218,7 +218,7 @@ async function handleShare() {
 
         <div v-else class="cards-grid">
           <WordCard
-            v-for="(c, i) in handCards"
+            v-for="(c, i) in hand"
             :key="c.id"
             :card="c"
             :theme="theme"
@@ -335,23 +335,24 @@ async function handleShare() {
       </template>
       <div class="sp"></div>
       <button class="btn ok" @click="handleSave">💾 保存到收藏</button>
-      <button class="btn" @click="handleShare" :disabled="isExporting">
-        {{ isExporting ? '生成中…' : '🖼️ 分享卡片' }}
-      </button>
     </div>
 
-    <!-- ============ 接力链接（多人接力接龙） ============ -->
-    <div class="card mt-m" style="background: linear-gradient(160deg, rgba(244,114,182,0.08), rgba(167,139,250,0.08)); border: 1px dashed #a78bfa;">
-      <div class="section-title"><span>接力链接</span><span>RELAY · 免后端</span></div>
-      <p class="sub" style="font-size: 13px; line-height: 1.6;">
-        🔄 把当前牌局（含已接的句子）打包成一个链接。发给下一位，他打开就能看到这局，继续抽牌接龙，再发下一位。
-        <br/>· 故事接龙推荐此方式：传花式协作，无需登录、无需服务器。
-        <br/>· 注意：这是「接力」非「实时」，对方看不到你实时打字。
-      </p>
-      <div class="mt-m row gap-s wrap">
+    <!-- ============ 成果导出/接力 分区 ============ -->
+    <div class="card mt-m">
+      <div class="section-title"><span>导出与分享</span><span>EXPORT</span></div>
+      <!-- 保存图片（原分享卡片） -->
+      <div class="row gap-s wrap">
+        <button class="btn" @click="handleShare" :disabled="isExporting">
+          {{ isExporting ? '生成中…' : '🖼️ 保存图片' }}
+        </button>
         <button class="btn primary" @click="genRelayUrl">🔗 生成接力链接</button>
-        <button v-if="relayUrl" class="btn ghost" @click="genRelayUrl">刷新链接</button>
       </div>
+      <p class="sub mt-s" style="font-size: 12px; line-height: 1.6;">
+        · <b>保存图片</b>：把当前牌局+句子导出成 PNG，存本地相册。<br/>
+        · <b>接力链接</b>：把整局状态打包进链接发给朋友。
+        <span v-if="mode === 'story'">接龙模式：对方打开继续抽牌接下一句。</span>
+        <span v-else>对方打开看到你的牌，可另起炉灶造句/重排。</span>
+      </p>
       <div v-if="relayUrl" class="mt-m">
         <label class="label">长按或点击下方框复制链接，发给朋友</label>
         <input
@@ -361,9 +362,12 @@ async function handleShare() {
           @focus="$event.target.select()"
           style="font-size: 12px; word-break: break-all;"
         />
+        <div class="mt-s row gap-s">
+          <button class="btn small ghost" @click="genRelayUrl">刷新链接</button>
+        </div>
       </div>
-      <div v-if="store.relayFrom" class="mt-s" style="font-size: 12px; color: #6ee7b7;">
-        ✅ 当前这局来自接力链接（由上一位发来），可继续接龙。
+      <div v-if="store.relayFrom" class="mt-s" style="font-size: 12px; color: var(--ok, #10b981);">
+        ✅ 当前这局来自接力链接（由上一位发来），可继续。
       </div>
     </div>
 
